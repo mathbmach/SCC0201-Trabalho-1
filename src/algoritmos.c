@@ -4,9 +4,9 @@
 
 void inverte(int *v, int n)
 {
-    int i, j = n - 1, temp;
+    int i, j, temp;
 
-    for (i = 0; i < n / 2; i++, j--)
+    for (i = 0, j = n - 1; i < n / 2; i++, j--)
     {
         temp = v[i];
         v[i] = v[j];
