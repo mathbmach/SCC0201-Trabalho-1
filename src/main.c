@@ -25,7 +25,7 @@ int main()
         {
             int *vcopia = malloc(n * sizeof(int));
 
-            for (i = 1; i < n; i++)
+            for (i = 0; i < n; i++)
             {
                 vcopia[i] = v[i];
             }
@@ -33,7 +33,7 @@ int main()
             inverte(vcopia, n);
 
             printf("%d", vcopia[0]);
-            for (i = 0; i < n; i++)
+            for (i = 1; i < n; i++)
             {
                 printf(" %d", vcopia[i]);
             }
