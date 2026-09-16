@@ -1,11 +1,14 @@
 /*
- * Programa auxiliar da INVERSAO (nao vai para o Run.Codes).
- * Mede o tempo medio da inversao e conta comparacoes e atribuicoes
- * para n = 1000, 50000, 100000, 500000 e 1000000.
- * Resultado: tela + arquivo resultados_inversao.csv
+ * Código auxiliar: inversão do vetor
  *
- * Compilar (dentro da pasta src):
- *   gcc -Wall auxiliar_inversao.c algoritmos.c -o aux
+ * Mede o tempo médio de execução da função inverte() e conta as
+ * comparações e atribuições realizadas no pior caso, para vetores de
+ * tamanho 1 000, 50 000, 100 000, 500 000 e 1 000 000. Os resultados são
+ * exibidos na tela e gravados em data/resultados_inversao.csv.
+ *
+ * Compilação e execução (a partir da raiz do repositório):
+ *   gcc -Wall experiments/auxiliar_inversao.c src/algoritmos.c -o auxiliar
+ *   ./auxiliar
  */
 
 #include <stdio.h>
@@ -13,35 +16,41 @@
 #include <time.h>
 #include "../src/algoritmos.h"
 
-/* Contadores globais: a funcao abaixo soma neles */
+/* Contadores de operações, incrementados por inverte_conta(). */
 long long comparacoes = 0;
 long long atribuicoes = 0;
 
 /*
- * Mesma logica da inverte() do algoritmos.c, com contadores.
- * Fica separada para os contadores nao atrapalharem a medicao de tempo.
+ * Versão instrumentada de inverte() (src/algoritmos.c), com a mesma lógica.
+ * Os contadores ficam em uma função separada para que os incrementos não
+ * interfiram na medição de tempo, feita sobre a função original.
+ *
+ * Convenção de contagem adotada:
+ *   - comparação: cada avaliação da condição do laço (i < n/2);
+ *   - atribuição: inicializações, as três atribuições da troca e as
+ *     atualizações i++ e j--.
  */
 void inverte_conta(int *v, int n)
 {
     int i, j, temp;
 
     j = n - 1;
-    atribuicoes++;              /* j = n - 1 */
+    atribuicoes++;
     i = 0;
-    atribuicoes++;              /* i = 0 */
+    atribuicoes++;
 
     for (; i < n / 2; i++, j--)
     {
-        comparacoes++;          /* teste i < n/2 que deu VERDADEIRO */
+        comparacoes++;          /* avaliação verdadeira da condição */
 
         temp = v[i];
         v[i] = v[j];
         v[j] = temp;
-        atribuicoes += 3;       /* as 3 atribuicoes da troca */
+        atribuicoes += 3;       /* troca de v[i] com v[j] */
 
         atribuicoes += 2;       /* i++ e j-- */
     }
-    comparacoes++;              /* ultimo teste i < n/2, que deu FALSO */
+    comparacoes++;              /* avaliação final (falsa) que encerra o laço */
 }
 
 int main(void)
@@ -52,7 +61,7 @@ int main(void)
     FILE *arq = fopen("data/resultados_inversao.csv", "w");
     if (arq == NULL)
     {
-        printf("Erro ao criar o arquivo\n");
+        printf("Erro ao criar data/resultados_inversao.csv\n");
         return 1;
     }
     fprintf(arq, "algoritmo,n,repeticoes,tempo_medio_s,comparacoes,atribuicoes\n");
@@ -61,21 +70,37 @@ int main(void)
     {
         int n = tamanhos[k];
 
-        /* Vetor ordenado 0, 1, ..., n-1 (para a inversao, qualquer vetor e pior caso) */
+        /*
+         * Vetor de entrada ordenado (0, 1, ..., n-1), conforme a restrição
+         * do enunciado. Como a inversão não possui condição de parada
+         * antecipada, o número de operações depende apenas de n: qualquer
+         * entrada de tamanho n corresponde ao pior caso (que coincide com o
+         * melhor e o médio).
+         */
         int *v = malloc(n * sizeof(int));
+        if (v == NULL)
+        {
+            printf("Erro de alocacao para n = %d\n", n);
+            fclose(arq);
+            return 1;
+        }
         for (int i = 0; i < n; i++)
             v[i] = i;
 
         /*
-         * Vetores pequenos invertem rapido demais para o clock() medir.
-         * Por isso repetimos mais vezes quando n e pequeno (minimo de 100,
-         * como pede o enunciado). Total de trabalho parecido para todo n.
+         * Número de repetições: no mínimo 100, conforme o enunciado.
+         * Para vetores pequenos, 100 execuções duram menos que a resolução
+         * de clock() (cerca de 1 ms em algumas plataformas), o que tornaria
+         * a medição imprecisa. Por isso o número de repetições é escolhido
+         * de forma inversamente proporcional a n, mantendo o tempo total
+         * medido aproximadamente constante entre os tamanhos. O valor
+         * registrado é a média por execução.
          */
         int repeticoes = 100000000 / n;
         if (repeticoes < 100)
             repeticoes = 100;
 
-        /* ---- Medicao de tempo (usa a inverte() original, sem contadores) ---- */
+        /* Medição de tempo sobre a função original (sem contadores). */
         clock_t inicio = clock();
         for (int r = 0; r < repeticoes; r++)
             inverte(v, n);
@@ -83,7 +108,10 @@ int main(void)
 
         double tempo_medio = (double)(fim - inicio) / CLOCKS_PER_SEC / repeticoes;
 
-        /* ---- Contagem de operacoes (uma execucao basta: o numero e sempre o mesmo) ---- */
+        /*
+         * Contagem de operações: uma única execução é suficiente, pois o
+         * número de operações é determinístico para cada n.
+         */
         comparacoes = 0;
         atribuicoes = 0;
         inverte_conta(v, n);
@@ -97,6 +125,6 @@ int main(void)
     }
 
     fclose(arq);
-    printf("\nResultados salvos em resultados_inversao.csv\n");
+    printf("\nResultados gravados em data/resultados_inversao.csv\n");
     return 0;
 }
