@@ -1,0 +1,152 @@
+[
+  [
+    1,
+    "Manual de trabalho",
+    "Entender.<br/>Experimentar.<br/>Construir juntos."
+  ],
+  [
+    2,
+    "Roteiro de leitura",
+    "Do primeiro teste à entrega"
+  ],
+  [
+    3,
+    "01 / Escopo",
+    "O que a equipe precisa produzir"
+  ],
+  [
+    4,
+    "02 / Ponto de partida",
+    "O projeto que existe hoje"
+  ],
+  [
+    5,
+    "03 / Organização",
+    "Cada pasta tem uma função"
+  ],
+  [
+    6,
+    "04 / Antes de medir",
+    "Primeiro, prove que funciona"
+  ],
+  [
+    7,
+    "05 / Mecanismos",
+    "O que cada algoritmo faz"
+  ],
+  [
+    8,
+    "06 / Desenho experimental",
+    "Uma configuração por vez"
+  ],
+  [
+    9,
+    "07 / Instrumentação",
+    "A regra de contagem do grupo"
+  ],
+  [
+    10,
+    "08 / Inversão",
+    "Da troca à função de custo"
+  ],
+  [
+    11,
+    "09 / Sequencial",
+    "Conte também a saída do laço"
+  ],
+  [
+    12,
+    "10 / Binária iterativa",
+    "O intervalo diminui a cada passo"
+  ],
+  [
+    13,
+    "11 / Binária recursiva",
+    "Cada chamada tem seu próprio intervalo"
+  ],
+  [
+    14,
+    "12 / Cronometragem",
+    "Meça um intervalo confiável"
+  ],
+  [
+    15,
+    "13 / Repetições",
+    "R chamadas formam uma rodada"
+  ],
+  [
+    16,
+    "14 / Execução",
+    "A sequência de uma configuração"
+  ],
+  [
+    17,
+    "15 / Estatística",
+    "Média e variação, sem mistério"
+  ],
+  [
+    18,
+    "16 / Dados",
+    "CSV que permite conferir o trabalho"
+  ],
+  [
+    19,
+    "17 / Gráficos",
+    "Mostre crescimento, não só números"
+  ],
+  [
+    20,
+    "18 / Teoria",
+    "Como escrever T(n) com clareza"
+  ],
+  [
+    21,
+    "19 / GitHub",
+    "Primeiro acesso, uma vez por pessoa"
+  ],
+  [
+    22,
+    "20 / GitHub",
+    "A rotina diária na main"
+  ],
+  [
+    23,
+    "21 / GitHub",
+    "Conflitos têm solução"
+  ],
+  [
+    24,
+    "22 / Relatório",
+    "Transforme resultados em argumentos"
+  ],
+  [
+    25,
+    "23 / Fechamento",
+    "Checklist para a equipe"
+  ],
+  [
+    26,
+    "Apêndice / 1 de 4",
+    "Um experimento completo em C"
+  ],
+  [
+    27,
+    "Apêndice / 2 de 4",
+    "Relógio e medição do lote"
+  ],
+  [
+    28,
+    "Apêndice / 3 de 4",
+    "Validar, calibrar e coletar"
+  ],
+  [
+    29,
+    "Apêndice / 4 de 4",
+    "Salvar e adaptar o exemplo"
+  ],
+  [
+    30,
+    "Referências",
+    "Bases e decisões a confirmar"
+  ]
+]
