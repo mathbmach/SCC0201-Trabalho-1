@@ -1,39 +1,36 @@
 /*
- * Código auxiliar de experimento — inversão de vetor
+ * Código auxiliar de experimento — inversão do vetor
  *
- * Objetivo:
- * Medir experimentalmente o comportamento da função inverte(),
- * registrando:
+ * Mede, para vetores de 1.000, 50.000, 100.000, 500.000 e 1.000.000 de
+ * elementos, o tempo médio de execução de inverte() e o número de
+ * comparações e atribuições de uma execução.
  *
- * 1. tempo médio de execução;
- * 2. número de comparações;
- * 3. número de atribuições;
+ * Duas decisões de método sustentam o experimento:
  *
- * para vetores de tamanho:
+ * 1. Tempo e contagem vêm de funções diferentes. O tempo vem da função
+ *    original de src/algoritmos.c; a contagem vem da versão
+ *    instrumentada definida aqui. Se os contadores estivessem dentro da
+ *    função cronometrada, o tempo mediria também o custo de
+ *    incrementá-los.
  *
- * 1.000
- * 50.000
- * 100.000
- * 500.000
- * 1.000.000
+ * 2. O cronômetro mede um bloco de repetições, não uma execução isolada,
+ *    porque uma inversão sozinha é curta demais para a resolução prática
+ *    de clock().
  *
- * A função original inverte() é utilizada para medir tempo.
- * Uma versão instrumentada, inverte_conta(), é utilizada apenas
- * para contar comparações e atribuições.
- *
- * Isso evita que os próprios contadores interfiram no tempo medido.
+ * A inversão não tem pior caso distinto: para um mesmo n, ela executa a
+ * mesma quantidade de operações qualquer que seja o conteúdo do vetor.
  *
  * Arquivo gerado:
  *
  * data/resultados_inversao.csv
  *
- * Compilação, a partir da raiz do projeto:
+ * Compilação, a partir da raiz do projeto (a pasta data/ precisa existir):
  *
  * gcc -Wall -Wextra -O0 experiments/auxiliar_inversao.c src/algoritmos.c -o auxiliar_inversao
  *
- * Execução:
+ * Execução no PowerShell:
  *
- * ./auxiliar_inversao
+ * .\auxiliar_inversao.exe
  */
 
 #include <stdio.h>
@@ -42,16 +39,9 @@
 
 #include "../src/algoritmos.h"
 
-/*
- * Quantidade de tamanhos de vetor utilizados no experimento.
- */
 #define QTD_TAMANHOS 5
 
-/*
- * Quantidade de execuções utilizadas apenas para aquecimento.
- *
- * Essas execuções NÃO fazem parte da medição.
- */
+/* Execuções feitas antes do cronômetro, fora da medição */
 #define AQUECIMENTO 10
 
 
@@ -60,43 +50,23 @@
  * FUNÇÃO INSTRUMENTADA
  * ------------------------------------------------------------
  *
- * Esta função possui exatamente a mesma lógica da função original:
+ * Mesma lógica de inverte(), com contadores. Não deve ser usada para
+ * medir tempo.
  *
- * void inverte(int *v, int n)
+ * Convenção de contagem, a mesma dos quatro algoritmos do trabalho
+ * (definida em analysis/README.md):
  *
- * porém adiciona contadores de comparações e atribuições.
+ *   comparações: i < n / 2, incluindo a última avaliação, falsa, que
+ *                encerra o laço
+ *   atribuições: i = 0, j = n - 1, as três da troca (temp, v[i], v[j])
+ *                e as duas atualizações (i++, j--)
  *
- * Ela NÃO deve ser utilizada para medir tempo.
+ * Não são contados: declarações sem inicialização, aritmética, acessos
+ * ao vetor, passagem de parâmetros, return e os próprios contadores.
  *
- *
- * Convenção adotada:
- *
- * COMPARAÇÃO
- * -----------
- * Cada avaliação da condição:
- *
- *     i < n / 2
- *
- * é contabilizada como uma comparação.
- *
- * Isso inclui:
- *
- * - as avaliações verdadeiras;
- * - a última avaliação falsa, que encerra o laço.
- *
- *
- * ATRIBUIÇÃO
- * ----------
- * São contabilizadas como atribuições:
- *
- * - i = 0
- * - j = n - 1
- * - temp = v[i]
- * - v[i] = v[j]
- * - v[j] = temp
- * - i++
- * - j--
- *
+ * O laço original é um for. Aqui virou while (1) com break apenas para
+ * que cada avaliação da condição fique visível e possa ser contada; o
+ * while (1) e o break não são contabilizados.
  */
 void inverte_conta(
     int *v,
@@ -105,65 +75,27 @@ void inverte_conta(
     long long *atribuicoes
 )
 {
-    int i, j, temp;
-
-    /*
-     * Inicializações do for:
-     *
-     * i = 0
-     * j = n - 1
-     *
-     * Duas atribuições.
-     */
-    i = 0;
-    j = n - 1;
+    int i = 0;
+    int j = n - 1;
+    int temp;
 
     *atribuicoes += 2;
 
-    /*
-     * Reescrevemos o for de maneira um pouco mais explícita
-     * para facilitar a contagem da condição.
-     */
     while (1)
     {
-        /*
-         * Avaliação da condição:
-         *
-         * i < n / 2
-         */
         (*comparacoes)++;
 
-        /*
-         * Caso a condição seja falsa,
-         * o algoritmo termina.
-         */
         if (!(i < n / 2))
         {
             break;
         }
 
-        /*
-         * Troca dos elementos.
-         *
-         * temp = v[i]
-         * v[i] = v[j]
-         * v[j] = temp
-         *
-         * Total: 3 atribuições.
-         */
         temp = v[i];
         v[i] = v[j];
         v[j] = temp;
 
         *atribuicoes += 3;
 
-        /*
-         * Atualizações equivalentes ao:
-         *
-         * i++, j--
-         *
-         * Consideramos cada atualização como uma atribuição.
-         */
         i++;
         j--;
 
@@ -174,17 +106,14 @@ void inverte_conta(
 
 /*
  * ------------------------------------------------------------
- * FUNÇÃO PARA PREENCHER O VETOR
+ * PREENCHIMENTO DO VETOR
  * ------------------------------------------------------------
  *
- * Preenche o vetor com:
+ * Preenche com 0, 1, 2, ..., n - 1.
  *
- * 0, 1, 2, 3, ..., n - 1
- *
- * Essa preparação é realizada FORA da região cronometrada.
- *
- * Embora a inversão não exija vetor ordenado,
- * essa escolha padroniza as entradas dos experimentos.
+ * A inversão não exige vetor ordenado, mas usamos a mesma entrada dos
+ * outros três experimentos para que a comparação entre os quatro
+ * algoritmos seja feita sobre os mesmos dados.
  */
 void preencher_vetor(int *v, int n)
 {
@@ -197,27 +126,14 @@ void preencher_vetor(int *v, int n)
 
 /*
  * ------------------------------------------------------------
- * DEFINIÇÃO DO NÚMERO DE REPETIÇÕES
+ * NÚMERO DE REPETIÇÕES CRONOMETRADAS
  * ------------------------------------------------------------
  *
- * O enunciado exige no mínimo 100 execuções.
+ * O custo da inversão cresce com n, então entradas maiores precisam de
+ * menos repetições para formar um bloco mensurável. O mínimo de 100
+ * atende à exigência do enunciado.
  *
- * Para vetores pequenos, 100 execuções podem durar muito pouco
- * e gerar medições imprecisas.
- *
- * Portanto:
- *
- * - entradas pequenas recebem mais repetições;
- * - entradas grandes recebem menos;
- * - nunca usamos menos de 100 execuções.
- *
- * Exemplo:
- *
- * n = 1.000       -> 100.000 repetições
- * n = 50.000      -> 2.000
- * n = 100.000     -> 1.000
- * n = 500.000     -> 200
- * n = 1.000.000   -> 100
+ * Resulta em 100.000 / 2.000 / 1.000 / 200 / 100 repetições.
  */
 int calcular_repeticoes(int n)
 {
@@ -239,9 +155,6 @@ int calcular_repeticoes(int n)
  */
 int main(void)
 {
-    /*
-     * Tamanhos exigidos para o experimento.
-     */
     int tamanhos[QTD_TAMANHOS] = {
         1000,
         50000,
@@ -250,30 +163,14 @@ int main(void)
         1000000
     };
 
-    /*
-     * Abre o arquivo CSV.
-     *
-     * A pasta data/ precisa existir.
-     */
-    FILE *arquivo = fopen(
-        "data/resultados_inversao.csv",
-        "w"
-    );
+    FILE *arquivo = fopen("data/resultados_inversao.csv", "w");
 
     if (arquivo == NULL)
     {
-        printf(
-            "Erro ao criar "
-            "data/resultados_inversao.csv\n"
-        );
-
+        printf("Erro ao criar data/resultados_inversao.csv\n");
         return 1;
     }
 
-
-    /*
-     * Cabeçalho do CSV.
-     */
     fprintf(
         arquivo,
         "algoritmo,"
@@ -285,263 +182,100 @@ int main(void)
         "atribuicoes\n"
     );
 
-
-    /*
-     * Testa todos os tamanhos.
-     */
     for (int k = 0; k < QTD_TAMANHOS; k++)
     {
         int n = tamanhos[k];
 
-        printf(
-            "\n----------------------------------------\n"
-        );
+        printf("\n----------------------------------------\n");
+        printf("Testando n = %d\n", n);
 
-        printf(
-            "Testando n = %d\n",
-            n
-        );
-
-
-        /*
-         * ----------------------------------------------------
-         * 1. ALOCAÇÃO DO VETOR
-         * ----------------------------------------------------
-         */
-        int *v = malloc(
-            (size_t)n * sizeof(int)
-        );
+        /* 1. Alocação do vetor */
+        int *v = malloc((size_t)n * sizeof(int));
 
         if (v == NULL)
         {
-            printf(
-                "Erro de alocacao para n = %d\n",
-                n
-            );
-
+            printf("Erro de alocacao para n = %d\n", n);
             fclose(arquivo);
-
             return 1;
         }
 
-
-        /*
-         * ----------------------------------------------------
-         * 2. PREPARAÇÃO DA ENTRADA
-         * ----------------------------------------------------
-         *
-         * Essa etapa não é cronometrada.
-         */
+        /* 2. Preparação da entrada, fora da região cronometrada */
         preencher_vetor(v, n);
 
+        /* 3. Número de repetições */
+        int repeticoes = calcular_repeticoes(n);
 
         /*
-         * ----------------------------------------------------
-         * 3. DEFINIÇÃO DO NÚMERO DE REPETIÇÕES
-         * ----------------------------------------------------
+         * 4. Aquecimento
+         *
+         * Reduz o peso do primeiro acesso ao código e aos dados, que é
+         * mais lento que os seguintes. Como a inversão sempre faz a
+         * mesma quantidade de operações, inverter o mesmo vetor várias
+         * vezes não altera o custo.
          */
-        int repeticoes =
-            calcular_repeticoes(n);
-
-
-        /*
-         * ----------------------------------------------------
-         * 4. AQUECIMENTO
-         * ----------------------------------------------------
-         *
-         * Executamos algumas inversões antes da medição.
-         *
-         * O objetivo é evitar que a primeira execução tenha
-         * comportamento muito diferente devido a efeitos
-         * iniciais de memória/cache.
-         *
-         * Como a inversão sempre realiza a mesma quantidade
-         * de operações, não há problema em inverter o mesmo
-         * vetor diversas vezes.
-         */
-        for (
-            int r = 0;
-            r < AQUECIMENTO;
-            r++
-        )
+        for (int r = 0; r < AQUECIMENTO; r++)
         {
             inverte(v, n);
         }
 
-
-        /*
-         * ----------------------------------------------------
-         * 5. MEDIÇÃO DO TEMPO
-         * ----------------------------------------------------
-         *
-         * Dentro da região medida há apenas chamadas
-         * à função original inverte().
-         *
-         * malloc, preenchimento, printf e gravação em arquivo
-         * ficam fora.
-         */
+        /* 5. Medição: só chamadas à função original dentro do cronômetro */
         clock_t inicio = clock();
 
-        for (
-            int r = 0;
-            r < repeticoes;
-            r++
-        )
+        for (int r = 0; r < repeticoes; r++)
         {
             inverte(v, n);
         }
 
         clock_t fim = clock();
 
-
-        /*
-         * Tempo total de todas as execuções.
-         */
         double tempo_total =
-            (double)(fim - inicio)
-            / CLOCKS_PER_SEC;
+            (double)(fim - inicio) / CLOCKS_PER_SEC;
 
-
-        /*
-         * Tempo médio de uma única execução.
-         */
-        double tempo_medio =
-            tempo_total
-            / repeticoes;
-
+        double tempo_medio = tempo_total / repeticoes;
 
         /*
-         * ----------------------------------------------------
-         * 6. CONTAGEM DAS OPERAÇÕES
-         * ----------------------------------------------------
+         * 6. Contagem das operações, fora do cronômetro
          *
-         * Os contadores começam em zero.
+         * Uma execução basta: para um mesmo n, a quantidade de operações
+         * é sempre a mesma.
          */
         long long comparacoes = 0;
         long long atribuicoes = 0;
 
+        inverte_conta(v, n, &comparacoes, &atribuicoes);
 
         /*
-         * Basta uma execução da versão instrumentada,
-         * pois para um mesmo n a quantidade de operações
-         * é determinística.
+         * 7. Conferência com a teoria
+         *
+         * Todos os n do experimento são pares, então o laço executa
+         * n / 2 vezes:
+         *
+         *   C(n) = n/2 + 1       (uma por repetição, mais a falsa final)
+         *   A(n) = 2 + 5(n/2)    (duas inicializações, cinco por repetição)
          */
-        inverte_conta(
-            v,
-            n,
-            &comparacoes,
-            &atribuicoes
-        );
+        long long comparacoes_teoricas = (long long)n / 2 + 1;
+        long long atribuicoes_teoricas = 2 + 5LL * (n / 2);
 
-
-        /*
-         * ----------------------------------------------------
-         * 7. VALIDAÇÃO COM A TEORIA
-         * ----------------------------------------------------
-         *
-         * Para os valores de n utilizados no experimento,
-         * todos são pares.
-         *
-         * O laço executa:
-         *
-         * n / 2
-         *
-         * vezes.
-         *
-         * Portanto:
-         *
-         * Comparações:
-         *
-         * C(n) = n/2 + 1
-         *
-         * Atribuições:
-         *
-         * duas inicializações
-         * +
-         * cinco atribuições por iteração
-         *
-         * A(n) = 2 + 5(n/2)
-         */
-        long long comparacoes_teoricas =
-            (long long)n / 2 + 1;
-
-        long long atribuicoes_teoricas =
-            2 + 5LL * (n / 2);
-
-
-        /*
-         * Verifica se a instrumentação está coerente
-         * com a análise matemática.
-         */
-        if (
-            comparacoes
-            != comparacoes_teoricas
-        )
+        if (comparacoes != comparacoes_teoricas)
         {
-            printf(
-                "ATENCAO: comparacoes diferentes "
-                "do valor teorico!\n"
-            );
+            printf("ATENCAO: comparacoes diferentes do valor teorico!\n");
         }
 
-        if (
-            atribuicoes
-            != atribuicoes_teoricas
-        )
+        if (atribuicoes != atribuicoes_teoricas)
         {
-            printf(
-                "ATENCAO: atribuicoes diferentes "
-                "do valor teorico!\n"
-            );
+            printf("ATENCAO: atribuicoes diferentes do valor teorico!\n");
         }
 
+        /* 8. Exibição dos resultados */
+        printf("Repeticoes      : %d\n", repeticoes);
+        printf("Tempo total     : %.9f s\n", tempo_total);
+        printf("Tempo medio     : %.12f s\n", tempo_medio);
+        printf("Comparacoes     : %lld\n", comparacoes);
+        printf("Atribuicoes     : %lld\n", atribuicoes);
+        printf("C(n) teorico    : %lld\n", comparacoes_teoricas);
+        printf("A(n) teorico    : %lld\n", atribuicoes_teoricas);
 
-        /*
-         * ----------------------------------------------------
-         * 8. EXIBIÇÃO DOS RESULTADOS
-         * ----------------------------------------------------
-         */
-        printf(
-            "Repeticoes   : %d\n",
-            repeticoes
-        );
-
-        printf(
-            "Tempo total  : %.9f s\n",
-            tempo_total
-        );
-
-        printf(
-            "Tempo medio  : %.12f s\n",
-            tempo_medio
-        );
-
-        printf(
-            "Comparacoes  : %lld\n",
-            comparacoes
-        );
-
-        printf(
-            "Atribuicoes  : %lld\n",
-            atribuicoes
-        );
-
-        printf(
-            "C(n) teorico : %lld\n",
-            comparacoes_teoricas
-        );
-
-        printf(
-            "A(n) teorico : %lld\n",
-            atribuicoes_teoricas
-        );
-
-
-        /*
-         * ----------------------------------------------------
-         * 9. GRAVAÇÃO NO CSV
-         * ----------------------------------------------------
-         */
+        /* 9. Gravação no CSV */
         fprintf(
             arquivo,
             "inversao,"
@@ -559,35 +293,16 @@ int main(void)
             atribuicoes
         );
 
-
-        /*
-         * ----------------------------------------------------
-         * 10. LIBERAÇÃO DA MEMÓRIA
-         * ----------------------------------------------------
-         */
+        /* 10. Liberação da memória */
         free(v);
     }
 
-
-    /*
-     * Fecha o CSV.
-     */
     fclose(arquivo);
 
-
-    printf(
-        "\n========================================\n"
-    );
-
-    printf(
-        "Experimento concluido.\n"
-    );
-
-    printf(
-        "Resultados salvos em:\n"
-        "data/resultados_inversao.csv\n"
-    );
-
+    printf("\n========================================\n");
+    printf("Experimento concluido.\n");
+    printf("Resultados salvos em:\n");
+    printf("data/resultados_inversao.csv\n");
 
     return 0;
 }

@@ -1,35 +1,31 @@
 /*
  * Código auxiliar de experimento — busca binária iterativa
  *
- * Objetivo:
- * Medir experimentalmente o comportamento da função
- * busca_binaria_iterativa(), registrando:
+ * Mede, para vetores de 1.000, 50.000, 100.000, 500.000 e 1.000.000 de
+ * elementos, o tempo médio de execução de busca_binaria_iterativa() e o
+ * número de comparações e atribuições no pior caso.
  *
- * 1. tempo médio de execução;
- * 2. número de comparações no pior caso;
- * 3. número de atribuições no pior caso.
+ * Duas decisões de método sustentam o experimento:
  *
- * Tamanhos testados:
+ * 1. Tempo e contagem vêm de funções diferentes. O tempo vem da função
+ *    original de src/algoritmos.c; a contagem vem da versão
+ *    instrumentada definida aqui. Se os contadores estivessem dentro da
+ *    função cronometrada, o tempo mediria também o custo de
+ *    incrementá-los.
  *
- * 1.000
- * 50.000
- * 100.000
- * 500.000
- * 1.000.000
+ * 2. O cronômetro mede um bloco de repetições, não uma execução isolada,
+ *    porque uma busca binária leva dezenas de nanossegundos, muito
+ *    abaixo da resolução prática de clock().
  *
- * A função original busca_binaria_iterativa() é utilizada
- * exclusivamente para a medição de tempo.
- *
- * Uma versão instrumentada, busca_binaria_iterativa_conta(),
- * é utilizada separadamente para contar comparações e atribuições.
- *
- * Isso evita que os próprios contadores interfiram no tempo medido.
+ * O número de repetições é o mesmo do auxiliar da busca binária
+ * recursiva, de propósito: é isso que permite comparar as duas versões
+ * sob o mesmo protocolo.
  *
  * Arquivo gerado:
  *
  * data/resultados_binaria_iterativa.csv
  *
- * Compilação, a partir da raiz do projeto:
+ * Compilação, a partir da raiz do projeto (a pasta data/ precisa existir):
  *
  * gcc -Wall -Wextra -O0 experiments/auxiliar_buscabinaria_iter.c src/algoritmos.c -o auxiliar_buscabinaria_iter
  *
@@ -44,93 +40,41 @@
 
 #include "../src/algoritmos.h"
 
-
-/*
- * Número de tamanhos utilizados no experimento.
- */
 #define QTD_TAMANHOS 5
 
-
-/*
- * A busca binária é extremamente rápida.
- *
- * Por isso utilizamos um número alto de repetições para que
- * o tempo total seja suficientemente grande para clock()
- * conseguir medi-lo com maior precisão.
- *
- * O enunciado exige pelo menos 100 execuções.
- *
- * Usamos o mesmo valor do experimento da busca binária
- * recursiva, para que as duas versões sejam comparáveis
- * sob o mesmo protocolo.
- */
+/* Repetições cronometradas por tamanho (o enunciado exige no mínimo 100) */
 #define REPETICOES 1000000
 
-
-/*
- * Execuções realizadas antes da medição.
- *
- * Elas NÃO entram no cálculo do tempo médio.
- */
+/* Execuções feitas antes do cronômetro, fora da medição */
 #define AQUECIMENTO 100
 
 
 /*
  * ------------------------------------------------------------
- * VERSÃO INSTRUMENTADA DA BUSCA BINÁRIA ITERATIVA
+ * FUNÇÃO INSTRUMENTADA
  * ------------------------------------------------------------
  *
- * Mantém a mesma lógica da função original:
+ * Mesma lógica de busca_binaria_iterativa(), com contadores. Não deve
+ * ser usada para medir tempo.
  *
- * int busca_binaria_iterativa(int *v, int n, int valor)
+ * Convenção de contagem, a mesma dos quatro algoritmos do trabalho
+ * (definida em analysis/README.md):
  *
- * porém adiciona contadores de comparações e atribuições.
+ *   comparações: inicio <= fim, incluindo a última avaliação, falsa, que
+ *                encerra o laço; v[meio] == valor; e v[meio] < valor
+ *   atribuições: inicio = 0, fim = n - 1, cada cálculo de meio e cada
+ *                atualização de inicio ou fim (apenas uma das duas por
+ *                repetição)
  *
+ * Não são contados: declarações sem inicialização, aritmética, acessos
+ * ao vetor, passagem de parâmetros, return e os próprios contadores.
  *
- * CONVENÇÃO DE CONTAGEM
- * ------------------------------------------------------------
+ * Essa convenção vale igual na versão recursiva, o que torna as duas
+ * diretamente comparáveis.
  *
- * Comparações:
- *
- * 1. inicio <= fim
- *
- *    Inclui a última avaliação, falsa, que encerra o laço
- *    quando o valor não é encontrado.
- *
- * 2. v[meio] == valor
- *
- * 3. v[meio] < valor
- *
- *
- * Atribuições:
- *
- * 1. inicio = 0
- *
- * 2. fim = n - 1
- *
- * 3. meio = inicio + (fim - inicio) / 2
- *
- * 4. inicio = meio + 1  ou  fim = meio - 1
- *
- *    Apenas uma das duas é executada em cada repetição.
- *
- *
- * Não contamos como atribuições ou comparações:
- *
- * - declarações sem inicialização;
- * - operações aritméticas e acessos ao vetor;
- * - passagem de parâmetros e instruções return;
- * - atualizações dos próprios contadores.
- *
- * Essa é a mesma convenção adotada nos demais algoritmos
- * do trabalho, definida em analysis/README.md. Ela permite
- * comparar diretamente esta versão com a recursiva.
- *
- *
- * O laço original é um while (inicio <= fim). Aqui ele foi
- * reescrito com while (1) e break apenas para que cada
- * avaliação da condição fique explícita. O while (1) e o
- * break não são contabilizados.
+ * O laço original é um while (inicio <= fim). Aqui virou while (1) com
+ * break apenas para que cada avaliação da condição fique visível e possa
+ * ser contada; o while (1) e o break não são contabilizados.
  */
 int busca_binaria_iterativa_conta(
     int *v,
@@ -140,14 +84,6 @@ int busca_binaria_iterativa_conta(
     long long *atribuicoes
 )
 {
-    /*
-     * Inicialização dos limites do intervalo:
-     *
-     * inicio = 0
-     * fim = n - 1
-     *
-     * Duas atribuições.
-     */
     int inicio = 0;
     int fim = n - 1;
     int meio;
@@ -156,11 +92,6 @@ int busca_binaria_iterativa_conta(
 
     while (1)
     {
-        /*
-         * Avaliação da condição do laço:
-         *
-         * inicio <= fim
-         */
         (*comparacoes)++;
 
         if (!(inicio <= fim))
@@ -168,20 +99,10 @@ int busca_binaria_iterativa_conta(
             break;
         }
 
-        /*
-         * Cálculo do índice central.
-         *
-         * Uma atribuição.
-         */
         meio = inicio + (fim - inicio) / 2;
 
         (*atribuicoes)++;
 
-        /*
-         * Comparação:
-         *
-         * v[meio] == valor
-         */
         (*comparacoes)++;
 
         if (v[meio] == valor)
@@ -189,11 +110,6 @@ int busca_binaria_iterativa_conta(
             return 1;
         }
 
-        /*
-         * Comparação:
-         *
-         * v[meio] < valor
-         */
         (*comparacoes)++;
 
         if (v[meio] < valor)
@@ -205,10 +121,7 @@ int busca_binaria_iterativa_conta(
             fim = meio - 1;
         }
 
-        /*
-         * Exatamente uma das duas atribuições acima é
-         * executada em cada repetição.
-         */
+        /* Exatamente uma das duas atribuições acima foi executada */
         (*atribuicoes)++;
     }
 
@@ -221,16 +134,8 @@ int busca_binaria_iterativa_conta(
  * PREENCHIMENTO DO VETOR
  * ------------------------------------------------------------
  *
- * Cria:
- *
- * 0, 1, 2, 3, ..., n - 1
- *
- * A busca binária exige vetor ordenado.
- *
- * Portanto essa entrada já satisfaz a condição necessária
- * para a execução do algoritmo.
- *
- * Essa preparação ocorre FORA da região cronometrada.
+ * Preenche com 0, 1, 2, ..., n - 1, que já está na ordem crescente
+ * exigida pela busca binária.
  */
 void preencher_vetor(int *v, int n)
 {
@@ -243,18 +148,12 @@ void preencher_vetor(int *v, int n)
 
 /*
  * ------------------------------------------------------------
- * NÚMERO DE REPETIÇÕES DO LAÇO NO PIOR CASO
+ * REPETIÇÕES DO LAÇO NO PIOR CASO
  * ------------------------------------------------------------
  *
- * Calcula:
- *
- * k = floor(log2(n)) + 1
- *
- * usando apenas divisões inteiras, para evitar erros de
- * arredondamento de ponto flutuante.
- *
- * Esse é o número de repetições com intervalo não vazio
- * quando o valor procurado é maior que todos os elementos.
+ * Calcula k = floor(log2(n)) + 1 por divisões inteiras sucessivas, para
+ * evitar os erros de arredondamento que log2() em ponto flutuante pode
+ * introduzir nos limites das potências de dois.
  */
 int calcular_k(int n)
 {
@@ -277,9 +176,6 @@ int calcular_k(int n)
  */
 int main(void)
 {
-    /*
-     * Tamanhos exigidos pelo experimento.
-     */
     int tamanhos[QTD_TAMANHOS] = {
         1000,
         50000,
@@ -288,31 +184,14 @@ int main(void)
         1000000
     };
 
-
-    /*
-     * Abre o arquivo CSV.
-     *
-     * A pasta data/ precisa existir.
-     */
-    FILE *arquivo = fopen(
-        "data/resultados_binaria_iterativa.csv",
-        "w"
-    );
+    FILE *arquivo = fopen("data/resultados_binaria_iterativa.csv", "w");
 
     if (arquivo == NULL)
     {
-        printf(
-            "Erro ao criar "
-            "data/resultados_binaria_iterativa.csv\n"
-        );
-
+        printf("Erro ao criar data/resultados_binaria_iterativa.csv\n");
         return 1;
     }
 
-
-    /*
-     * Cabeçalho do CSV.
-     */
     fprintf(
         arquivo,
         "algoritmo,"
@@ -324,147 +203,74 @@ int main(void)
         "atribuicoes\n"
     );
 
-
-    /*
-     * Executa o experimento para cada tamanho.
-     */
     for (int k = 0; k < QTD_TAMANHOS; k++)
     {
         int n = tamanhos[k];
 
+        printf("\n----------------------------------------\n");
+        printf("Testando n = %d\n", n);
 
-        printf(
-            "\n----------------------------------------\n"
-        );
-
-        printf(
-            "Testando n = %d\n",
-            n
-        );
-
-
-        /*
-         * ----------------------------------------------------
-         * 1. ALOCAÇÃO DO VETOR
-         * ----------------------------------------------------
-         */
-        int *v = malloc(
-            (size_t)n * sizeof(int)
-        );
+        /* 1. Alocação do vetor */
+        int *v = malloc((size_t)n * sizeof(int));
 
         if (v == NULL)
         {
-            printf(
-                "Erro de alocacao para n = %d\n",
-                n
-            );
-
+            printf("Erro de alocacao para n = %d\n", n);
             fclose(arquivo);
-
             return 1;
         }
 
-
-        /*
-         * ----------------------------------------------------
-         * 2. PREPARAÇÃO DA ENTRADA
-         * ----------------------------------------------------
-         */
+        /* 2. Preparação da entrada, fora da região cronometrada */
         preencher_vetor(v, n);
 
-
         /*
-         * ----------------------------------------------------
-         * 3. DEFINIÇÃO DO PIOR CASO
-         * ----------------------------------------------------
+         * 3. Definição do pior caso
          *
-         * O vetor contém:
-         *
-         * 0, 1, 2, ..., n - 1
-         *
-         * Portanto o valor:
-         *
-         * p = n
-         *
-         * NÃO existe no vetor.
-         *
-         * Como p é maior que todos os elementos, o algoritmo
-         * sempre segue para a metade direita, que é a maior
-         * das duas com o cálculo de meio utilizado, até que:
-         *
-         * inicio > fim
-         *
-         * Esse é o caminho mais longo possível: o intervalo
-         * é reduzido o número máximo de vezes.
+         * O vetor contém 0, 1, ..., n - 1, então p = n não existe nele e
+         * é maior que todos os elementos. Por isso o algoritmo sempre
+         * segue para a metade direita, que é a maior das duas com o
+         * cálculo de meio utilizado, e só para quando o intervalo fica
+         * vazio. Esse é o caminho mais longo possível.
          */
         int p = n;
 
-
         /*
-         * ----------------------------------------------------
-         * 4. AQUECIMENTO
-         * ----------------------------------------------------
+         * 4. Aquecimento
          *
-         * Algumas buscas são realizadas antes do cronômetro.
+         * Reduz o peso do primeiro acesso ao código e aos dados, que é
+         * mais lento que os seguintes.
          *
-         * Essas execuções não entram na medição.
+         * O retorno vai para uma variável volatile para reduzir a chance
+         * de o compilador descartar a chamada por considerar o resultado
+         * inútil, o que zeraria o tempo medido.
          */
         volatile int resultado = 0;
 
         for (int r = 0; r < AQUECIMENTO; r++)
         {
-            resultado =
-                busca_binaria_iterativa(v, n, p);
+            resultado = busca_binaria_iterativa(v, n, p);
         }
 
-
-        /*
-         * ----------------------------------------------------
-         * 5. MEDIÇÃO DO TEMPO
-         * ----------------------------------------------------
-         *
-         * Dentro da região cronometrada ficam apenas
-         * chamadas à função original.
-         *
-         * O resultado é armazenado em uma variável volatile
-         * para reduzir a possibilidade de o compilador
-         * eliminar a chamada por considerar seu resultado
-         * desnecessário.
-         */
+        /* 5. Medição: só chamadas à função original dentro do cronômetro */
         clock_t inicio = clock();
 
         for (int r = 0; r < REPETICOES; r++)
         {
-            resultado =
-                busca_binaria_iterativa(v, n, p);
+            resultado = busca_binaria_iterativa(v, n, p);
         }
 
         clock_t fim = clock();
 
-
-        /*
-         * Tempo de todas as execuções.
-         */
         double tempo_total =
-            (double)(fim - inicio)
-            / CLOCKS_PER_SEC;
+            (double)(fim - inicio) / CLOCKS_PER_SEC;
 
-
-        /*
-         * Tempo médio de UMA busca.
-         */
-        double tempo_medio =
-            tempo_total
-            / REPETICOES;
-
+        double tempo_medio = tempo_total / REPETICOES;
 
         /*
-         * ----------------------------------------------------
-         * 6. CONTAGEM DE OPERAÇÕES
-         * ----------------------------------------------------
+         * 6. Contagem das operações, fora do cronômetro
          *
-         * A versão instrumentada é executada separadamente
-         * para não interferir no tempo.
+         * Uma execução basta: para um mesmo n e um mesmo valor procurado,
+         * a quantidade de operações é sempre a mesma.
          */
         long long comparacoes = 0;
         long long atribuicoes = 0;
@@ -478,132 +284,54 @@ int main(void)
                 &atribuicoes
             );
 
-
         /*
-         * ----------------------------------------------------
-         * 7. VALIDAÇÃO COM A TEORIA
-         * ----------------------------------------------------
+         * 7. Conferência com a teoria
          *
-         * Seja k o número de repetições com intervalo não
-         * vazio:
+         * Sendo k o número de repetições com intervalo não vazio, cada
+         * uma faz 3 comparações e 2 atribuições. Somando a comparação
+         * final, falsa, e as duas inicializações:
          *
-         * k = floor(log2(n)) + 1
-         *
-         * Cada uma dessas repetições faz três comparações
-         * (inicio <= fim, v[meio] == valor e v[meio] < valor)
-         * e duas atribuições (meio e a atualização de um dos
-         * limites).
-         *
-         * Além delas, ocorre uma avaliação final de
-         * inicio <= fim, que é falsa e encerra o laço.
-         *
-         * Somando as duas inicializações:
-         *
-         * C(n) = 3k + 1
-         * A(n) = 2k + 2
+         *   C(n) = 3k + 1
+         *   A(n) = 2k + 2
          */
         int k_teorico = calcular_k(n);
 
-        long long comparacoes_teoricas =
-            3LL * k_teorico + 1;
+        long long comparacoes_teoricas = 3LL * k_teorico + 1;
+        long long atribuicoes_teoricas = 2LL * k_teorico + 2;
 
-        long long atribuicoes_teoricas =
-            2LL * k_teorico + 2;
-
-
-        /*
-         * Como p = n não pertence ao vetor, o retorno correto
-         * das duas versões é zero.
-         */
+        /* p = n não pertence ao vetor, então o retorno correto é zero */
         if (resultado != 0)
         {
-            printf(
-                "ATENCAO: resultado incorreto "
-                "na funcao original!\n"
-            );
+            printf("ATENCAO: resultado incorreto na funcao original!\n");
         }
 
         if (resultado_contagem != 0)
         {
-            printf(
-                "ATENCAO: resultado incorreto "
-                "na funcao instrumentada!\n"
-            );
+            printf("ATENCAO: resultado incorreto na funcao instrumentada!\n");
         }
 
         if (comparacoes != comparacoes_teoricas)
         {
-            printf(
-                "ATENCAO: comparacoes diferentes "
-                "do valor teorico!\n"
-            );
+            printf("ATENCAO: comparacoes diferentes do valor teorico!\n");
         }
 
         if (atribuicoes != atribuicoes_teoricas)
         {
-            printf(
-                "ATENCAO: atribuicoes diferentes "
-                "do valor teorico!\n"
-            );
+            printf("ATENCAO: atribuicoes diferentes do valor teorico!\n");
         }
 
+        /* 8. Exibição dos resultados */
+        printf("Valor procurado : %d (inexistente)\n", p);
+        printf("Repeticoes      : %d\n", REPETICOES);
+        printf("k teorico       : %d\n", k_teorico);
+        printf("Tempo total     : %.9f s\n", tempo_total);
+        printf("Tempo medio     : %.12f s\n", tempo_medio);
+        printf("Comparacoes     : %lld\n", comparacoes);
+        printf("Atribuicoes     : %lld\n", atribuicoes);
+        printf("C(n) teorico    : %lld\n", comparacoes_teoricas);
+        printf("A(n) teorico    : %lld\n", atribuicoes_teoricas);
 
-        /*
-         * ----------------------------------------------------
-         * 8. EXIBIÇÃO DOS RESULTADOS
-         * ----------------------------------------------------
-         */
-        printf(
-            "Valor procurado : %d (inexistente)\n",
-            p
-        );
-
-        printf(
-            "Repeticoes      : %d\n",
-            REPETICOES
-        );
-
-        printf(
-            "k teorico       : %d\n",
-            k_teorico
-        );
-
-        printf(
-            "Tempo total     : %.9f s\n",
-            tempo_total
-        );
-
-        printf(
-            "Tempo medio     : %.12f s\n",
-            tempo_medio
-        );
-
-        printf(
-            "Comparacoes     : %lld\n",
-            comparacoes
-        );
-
-        printf(
-            "Atribuicoes     : %lld\n",
-            atribuicoes
-        );
-
-        printf(
-            "C(n) teorico    : %lld\n",
-            comparacoes_teoricas
-        );
-
-        printf(
-            "A(n) teorico    : %lld\n",
-            atribuicoes_teoricas
-        );
-
-
-        /*
-         * ----------------------------------------------------
-         * 9. GRAVAÇÃO NO CSV
-         * ----------------------------------------------------
-         */
+        /* 9. Gravação no CSV */
         fprintf(
             arquivo,
             "binaria_iterativa,"
@@ -621,35 +349,16 @@ int main(void)
             atribuicoes
         );
 
-
-        /*
-         * ----------------------------------------------------
-         * 10. LIBERAÇÃO DA MEMÓRIA
-         * ----------------------------------------------------
-         */
+        /* 10. Liberação da memória */
         free(v);
     }
 
-
-    /*
-     * Fecha o arquivo CSV.
-     */
     fclose(arquivo);
 
-
-    printf(
-        "\n========================================\n"
-    );
-
-    printf(
-        "Experimento concluido.\n"
-    );
-
-    printf(
-        "Resultados salvos em:\n"
-        "data/resultados_binaria_iterativa.csv\n"
-    );
-
+    printf("\n========================================\n");
+    printf("Experimento concluido.\n");
+    printf("Resultados salvos em:\n");
+    printf("data/resultados_binaria_iterativa.csv\n");
 
     return 0;
 }

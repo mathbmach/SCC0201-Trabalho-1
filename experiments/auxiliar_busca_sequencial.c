@@ -1,35 +1,27 @@
 /*
  * Código auxiliar de experimento — busca sequencial
  *
- * Objetivo:
- * Medir experimentalmente o comportamento da função
- * busca_sequencial(), registrando:
+ * Mede, para vetores de 1.000, 50.000, 100.000, 500.000 e 1.000.000 de
+ * elementos, o tempo médio de execução de busca_sequencial() e o número
+ * de comparações e atribuições no pior caso.
  *
- * 1. tempo médio de execução;
- * 2. número de comparações no pior caso;
- * 3. número de atribuições no pior caso.
+ * Duas decisões de método sustentam o experimento:
  *
- * Tamanhos testados:
+ * 1. Tempo e contagem vêm de funções diferentes. O tempo vem da função
+ *    original de src/algoritmos.c; a contagem vem da versão
+ *    instrumentada definida aqui. Se os contadores estivessem dentro da
+ *    função cronometrada, o tempo mediria também o custo de
+ *    incrementá-los.
  *
- * 1.000
- * 50.000
- * 100.000
- * 500.000
- * 1.000.000
- *
- * A função original busca_sequencial() é utilizada exclusivamente
- * para a medição de tempo.
- *
- * Uma versão instrumentada, busca_sequencial_conta(), é utilizada
- * separadamente para contar comparações e atribuições.
- *
- * Isso evita que os próprios contadores interfiram no tempo medido.
+ * 2. O cronômetro mede um bloco de repetições, não uma execução isolada,
+ *    porque uma busca sozinha é curta demais para a resolução prática de
+ *    clock().
  *
  * Arquivo gerado:
  *
  * data/resultados_busca_sequencial.csv
  *
- * Compilação, a partir da raiz do projeto:
+ * Compilação, a partir da raiz do projeto (a pasta data/ precisa existir):
  *
  * gcc -Wall -Wextra -O0 experiments/auxiliar_busca_sequencial.c src/algoritmos.c -o auxiliar_busca_sequencial
  *
@@ -44,71 +36,33 @@
 
 #include "../src/algoritmos.h"
 
-
-/*
- * Número de tamanhos utilizados no experimento.
- */
 #define QTD_TAMANHOS 5
 
-
-/*
- * Execuções realizadas antes da medição.
- *
- * Elas NÃO entram no cálculo do tempo médio.
- */
+/* Execuções feitas antes do cronômetro, fora da medição */
 #define AQUECIMENTO 10
 
 
 /*
  * ------------------------------------------------------------
- * VERSÃO INSTRUMENTADA DA BUSCA SEQUENCIAL
+ * FUNÇÃO INSTRUMENTADA
  * ------------------------------------------------------------
  *
- * Mantém a mesma lógica da função original:
+ * Mesma lógica de busca_sequencial(), com contadores. Não deve ser usada
+ * para medir tempo.
  *
- * int busca_sequencial(int *v, int n, int valor)
+ * Convenção de contagem, a mesma dos quatro algoritmos do trabalho
+ * (definida em analysis/README.md):
  *
- * porém adiciona contadores de comparações e atribuições.
+ *   comparações: i < n, incluindo a última avaliação, falsa, que encerra
+ *                o laço; e v[i] == valor
+ *   atribuições: i = 0 e cada i++
  *
- * Ela NÃO deve ser utilizada para medir tempo.
+ * Não são contados: declarações sem inicialização, aritmética, acessos
+ * ao vetor, passagem de parâmetros, return e os próprios contadores.
  *
- *
- * CONVENÇÃO DE CONTAGEM
- * ------------------------------------------------------------
- *
- * Comparações:
- *
- * 1. i < n
- *
- *    Inclui a última avaliação, falsa, que encerra o laço
- *    quando o valor não é encontrado.
- *
- * 2. v[i] == valor
- *
- *
- * Atribuições:
- *
- * 1. i = 0
- *
- * 2. i++
- *
- *
- * Não contamos como atribuições ou comparações:
- *
- * - declarações sem inicialização;
- * - operações aritméticas e acessos ao vetor;
- * - passagem de parâmetros e instruções return;
- * - atualizações dos próprios contadores.
- *
- * Essa é a mesma convenção adotada nos demais algoritmos
- * do trabalho, definida em analysis/README.md.
- *
- *
- * O laço original é um for. Aqui ele foi reescrito com
- * while (1) e break apenas para que cada avaliação da
- * condição fique explícita. O while (1) e o break não são
- * contabilizados: cada incremento representa uma operação
- * existente no algoritmo original.
+ * O laço original é um for. Aqui virou while (1) com break apenas para
+ * que cada avaliação da condição fique visível e possa ser contada; o
+ * while (1) e o break não são contabilizados.
  */
 int busca_sequencial_conta(
     int *v,
@@ -118,24 +72,12 @@ int busca_sequencial_conta(
     long long *atribuicoes
 )
 {
-    /*
-     * Inicialização do for:
-     *
-     * i = 0
-     *
-     * Uma atribuição.
-     */
     int i = 0;
 
     (*atribuicoes)++;
 
     while (1)
     {
-        /*
-         * Avaliação da condição:
-         *
-         * i < n
-         */
         (*comparacoes)++;
 
         if (!(i < n))
@@ -143,11 +85,6 @@ int busca_sequencial_conta(
             break;
         }
 
-        /*
-         * Comparação do elemento atual com o valor procurado:
-         *
-         * v[i] == valor
-         */
         (*comparacoes)++;
 
         if (v[i] == valor)
@@ -155,13 +92,6 @@ int busca_sequencial_conta(
             return 1;
         }
 
-        /*
-         * Atualização do índice:
-         *
-         * i++
-         *
-         * Uma atribuição.
-         */
         i++;
 
         (*atribuicoes)++;
@@ -176,15 +106,11 @@ int busca_sequencial_conta(
  * PREENCHIMENTO DO VETOR
  * ------------------------------------------------------------
  *
- * Cria:
+ * Preenche com 0, 1, 2, ..., n - 1.
  *
- * 0, 1, 2, 3, ..., n - 1
- *
- * A busca sequencial não exige vetor ordenado, mas usamos a
- * mesma entrada dos demais experimentos para padronizar a
- * comparação entre os quatro algoritmos.
- *
- * Essa preparação ocorre FORA da região cronometrada.
+ * A busca sequencial não exige vetor ordenado, mas usamos a mesma
+ * entrada dos outros três experimentos para que a comparação entre os
+ * quatro algoritmos seja feita sobre os mesmos dados.
  */
 void preencher_vetor(int *v, int n)
 {
@@ -197,26 +123,15 @@ void preencher_vetor(int *v, int n)
 
 /*
  * ------------------------------------------------------------
- * DEFINIÇÃO DO NÚMERO DE REPETIÇÕES
+ * NÚMERO DE REPETIÇÕES CRONOMETRADAS
  * ------------------------------------------------------------
  *
- * O enunciado exige no mínimo 100 execuções.
+ * O custo da busca sequencial cresce com n, então entradas maiores
+ * precisam de menos repetições para formar um bloco mensurável. O mínimo
+ * de 100 atende à exigência do enunciado. Mesma regra do auxiliar da
+ * inversão, que também é linear.
  *
- * Como o custo da busca sequencial cresce linearmente com n,
- * usamos a mesma regra do experimento de inversão:
- *
- * - entradas pequenas recebem mais repetições;
- * - entradas grandes recebem menos;
- * - nunca usamos menos de 100 execuções.
- *
- * Isso mantém o tempo total de cada bloco em uma faixa
- * mensurável pelo relógio.
- *
- * n = 1.000       -> 100.000 repetições
- * n = 50.000      -> 2.000
- * n = 100.000     -> 1.000
- * n = 500.000     -> 200
- * n = 1.000.000   -> 100
+ * Resulta em 100.000 / 2.000 / 1.000 / 200 / 100 repetições.
  */
 int calcular_repeticoes(int n)
 {
@@ -238,9 +153,6 @@ int calcular_repeticoes(int n)
  */
 int main(void)
 {
-    /*
-     * Tamanhos exigidos pelo experimento.
-     */
     int tamanhos[QTD_TAMANHOS] = {
         1000,
         50000,
@@ -249,31 +161,14 @@ int main(void)
         1000000
     };
 
-
-    /*
-     * Abre o arquivo CSV.
-     *
-     * A pasta data/ precisa existir.
-     */
-    FILE *arquivo = fopen(
-        "data/resultados_busca_sequencial.csv",
-        "w"
-    );
+    FILE *arquivo = fopen("data/resultados_busca_sequencial.csv", "w");
 
     if (arquivo == NULL)
     {
-        printf(
-            "Erro ao criar "
-            "data/resultados_busca_sequencial.csv\n"
-        );
-
+        printf("Erro ao criar data/resultados_busca_sequencial.csv\n");
         return 1;
     }
 
-
-    /*
-     * Cabeçalho do CSV.
-     */
     fprintf(
         arquivo,
         "algoritmo,"
@@ -285,159 +180,76 @@ int main(void)
         "atribuicoes\n"
     );
 
-
-    /*
-     * Executa o experimento para cada tamanho.
-     */
     for (int k = 0; k < QTD_TAMANHOS; k++)
     {
         int n = tamanhos[k];
 
+        printf("\n----------------------------------------\n");
+        printf("Testando n = %d\n", n);
 
-        printf(
-            "\n----------------------------------------\n"
-        );
-
-        printf(
-            "Testando n = %d\n",
-            n
-        );
-
-
-        /*
-         * ----------------------------------------------------
-         * 1. ALOCAÇÃO DO VETOR
-         * ----------------------------------------------------
-         */
-        int *v = malloc(
-            (size_t)n * sizeof(int)
-        );
+        /* 1. Alocação do vetor */
+        int *v = malloc((size_t)n * sizeof(int));
 
         if (v == NULL)
         {
-            printf(
-                "Erro de alocacao para n = %d\n",
-                n
-            );
-
+            printf("Erro de alocacao para n = %d\n", n);
             fclose(arquivo);
-
             return 1;
         }
 
-
-        /*
-         * ----------------------------------------------------
-         * 2. PREPARAÇÃO DA ENTRADA
-         * ----------------------------------------------------
-         *
-         * Essa etapa não é cronometrada.
-         */
+        /* 2. Preparação da entrada, fora da região cronometrada */
         preencher_vetor(v, n);
 
-
         /*
-         * ----------------------------------------------------
-         * 3. DEFINIÇÃO DO PIOR CASO
-         * ----------------------------------------------------
+         * 3. Definição do pior caso
          *
-         * O vetor contém:
-         *
-         * 0, 1, 2, ..., n - 1
-         *
-         * Portanto o valor:
-         *
-         * p = n
-         *
-         * NÃO existe no vetor.
-         *
-         * A busca sequencial precisa examinar todas as n
-         * posições antes de concluir que o valor está ausente.
-         *
-         * Esse é o maior número de comparações possível para
-         * um vetor desse tamanho.
+         * O vetor contém 0, 1, ..., n - 1, então p = n não existe nele, e
+         * a busca é obrigada a examinar todas as n posições antes de
+         * concluir que o valor está ausente. Esse é o maior número de
+         * comparações possível para esse tamanho.
          */
         int p = n;
 
+        /* 4. Número de repetições */
+        int repeticoes = calcular_repeticoes(n);
 
         /*
-         * ----------------------------------------------------
-         * 4. DEFINIÇÃO DO NÚMERO DE REPETIÇÕES
-         * ----------------------------------------------------
-         */
-        int repeticoes =
-            calcular_repeticoes(n);
-
-
-        /*
-         * ----------------------------------------------------
-         * 5. AQUECIMENTO
-         * ----------------------------------------------------
+         * 5. Aquecimento
          *
-         * Algumas buscas são realizadas antes do cronômetro,
-         * para reduzir o peso do primeiro acesso ao código e
-         * aos dados. Essas execuções não entram na medição.
+         * Reduz o peso do primeiro acesso ao código e aos dados, que é
+         * mais lento que os seguintes.
+         *
+         * O retorno vai para uma variável volatile para reduzir a chance
+         * de o compilador descartar a chamada por considerar o resultado
+         * inútil, o que zeraria o tempo medido.
          */
         volatile int resultado = 0;
 
         for (int r = 0; r < AQUECIMENTO; r++)
         {
-            resultado =
-                busca_sequencial(v, n, p);
+            resultado = busca_sequencial(v, n, p);
         }
 
-
-        /*
-         * ----------------------------------------------------
-         * 6. MEDIÇÃO DO TEMPO
-         * ----------------------------------------------------
-         *
-         * Dentro da região cronometrada ficam apenas chamadas
-         * à função original.
-         *
-         * O resultado é armazenado em uma variável volatile
-         * para reduzir a possibilidade de o compilador
-         * eliminar a chamada por considerar seu resultado
-         * desnecessário.
-         */
+        /* 6. Medição: só chamadas à função original dentro do cronômetro */
         clock_t inicio = clock();
 
         for (int r = 0; r < repeticoes; r++)
         {
-            resultado =
-                busca_sequencial(v, n, p);
+            resultado = busca_sequencial(v, n, p);
         }
 
         clock_t fim = clock();
 
-
-        /*
-         * Tempo total de todas as execuções.
-         */
         double tempo_total =
-            (double)(fim - inicio)
-            / CLOCKS_PER_SEC;
+            (double)(fim - inicio) / CLOCKS_PER_SEC;
 
-
-        /*
-         * Tempo médio de UMA busca.
-         */
-        double tempo_medio =
-            tempo_total
-            / repeticoes;
-
+        double tempo_medio = tempo_total / repeticoes;
 
         /*
-         * ----------------------------------------------------
-         * 7. CONTAGEM DAS OPERAÇÕES
-         * ----------------------------------------------------
+         * 7. Contagem das operações, fora do cronômetro
          *
-         * A versão instrumentada é executada separadamente
-         * para não interferir no tempo.
-         *
-         * Basta uma execução, pois para um mesmo n e um mesmo
-         * valor procurado a quantidade de operações é
-         * determinística.
+         * Uma execução basta: para um mesmo n e um mesmo valor procurado,
+         * a quantidade de operações é sempre a mesma.
          */
         long long comparacoes = 0;
         long long atribuicoes = 0;
@@ -451,124 +263,51 @@ int main(void)
                 &atribuicoes
             );
 
-
         /*
-         * ----------------------------------------------------
-         * 8. VALIDAÇÃO COM A TEORIA
-         * ----------------------------------------------------
+         * 8. Conferência com a teoria
          *
-         * No pior caso, com o valor ausente:
+         * No pior caso, com o valor ausente, i < n é avaliada n + 1 vezes
+         * (uma por posição, mais a falsa que encerra o laço) e
+         * v[i] == valor, n vezes:
          *
-         * A condição i < n é avaliada n + 1 vezes: uma para
-         * cada posição examinada e mais uma, falsa, que
-         * encerra o laço.
-         *
-         * A comparação v[i] == valor ocorre n vezes.
-         *
-         * Portanto:
-         *
-         * C(n) = (n + 1) + n = 2n + 1
-         *
-         * As atribuições são a inicialização i = 0 e os n
-         * incrementos i++:
-         *
-         * A(n) = n + 1
+         *   C(n) = (n + 1) + n = 2n + 1
+         *   A(n) = 1 + n                 (i = 0 e os n incrementos)
          */
-        long long comparacoes_teoricas =
-            2LL * n + 1;
+        long long comparacoes_teoricas = 2LL * n + 1;
+        long long atribuicoes_teoricas = (long long)n + 1;
 
-        long long atribuicoes_teoricas =
-            (long long)n + 1;
-
-
-        /*
-         * Como p = n não pertence ao vetor, o retorno correto
-         * das duas versões é zero.
-         */
+        /* p = n não pertence ao vetor, então o retorno correto é zero */
         if (resultado != 0)
         {
-            printf(
-                "ATENCAO: resultado incorreto "
-                "na funcao original!\n"
-            );
+            printf("ATENCAO: resultado incorreto na funcao original!\n");
         }
 
         if (resultado_contagem != 0)
         {
-            printf(
-                "ATENCAO: resultado incorreto "
-                "na funcao instrumentada!\n"
-            );
+            printf("ATENCAO: resultado incorreto na funcao instrumentada!\n");
         }
 
         if (comparacoes != comparacoes_teoricas)
         {
-            printf(
-                "ATENCAO: comparacoes diferentes "
-                "do valor teorico!\n"
-            );
+            printf("ATENCAO: comparacoes diferentes do valor teorico!\n");
         }
 
         if (atribuicoes != atribuicoes_teoricas)
         {
-            printf(
-                "ATENCAO: atribuicoes diferentes "
-                "do valor teorico!\n"
-            );
+            printf("ATENCAO: atribuicoes diferentes do valor teorico!\n");
         }
 
+        /* 9. Exibição dos resultados */
+        printf("Valor procurado : %d (inexistente)\n", p);
+        printf("Repeticoes      : %d\n", repeticoes);
+        printf("Tempo total     : %.9f s\n", tempo_total);
+        printf("Tempo medio     : %.12f s\n", tempo_medio);
+        printf("Comparacoes     : %lld\n", comparacoes);
+        printf("Atribuicoes     : %lld\n", atribuicoes);
+        printf("C(n) teorico    : %lld\n", comparacoes_teoricas);
+        printf("A(n) teorico    : %lld\n", atribuicoes_teoricas);
 
-        /*
-         * ----------------------------------------------------
-         * 9. EXIBIÇÃO DOS RESULTADOS
-         * ----------------------------------------------------
-         */
-        printf(
-            "Valor procurado : %d (inexistente)\n",
-            p
-        );
-
-        printf(
-            "Repeticoes      : %d\n",
-            repeticoes
-        );
-
-        printf(
-            "Tempo total     : %.9f s\n",
-            tempo_total
-        );
-
-        printf(
-            "Tempo medio     : %.12f s\n",
-            tempo_medio
-        );
-
-        printf(
-            "Comparacoes     : %lld\n",
-            comparacoes
-        );
-
-        printf(
-            "Atribuicoes     : %lld\n",
-            atribuicoes
-        );
-
-        printf(
-            "C(n) teorico    : %lld\n",
-            comparacoes_teoricas
-        );
-
-        printf(
-            "A(n) teorico    : %lld\n",
-            atribuicoes_teoricas
-        );
-
-
-        /*
-         * ----------------------------------------------------
-         * 10. GRAVAÇÃO NO CSV
-         * ----------------------------------------------------
-         */
+        /* 10. Gravação no CSV */
         fprintf(
             arquivo,
             "busca_sequencial,"
@@ -586,35 +325,16 @@ int main(void)
             atribuicoes
         );
 
-
-        /*
-         * ----------------------------------------------------
-         * 11. LIBERAÇÃO DA MEMÓRIA
-         * ----------------------------------------------------
-         */
+        /* 11. Liberação da memória */
         free(v);
     }
 
-
-    /*
-     * Fecha o arquivo CSV.
-     */
     fclose(arquivo);
 
-
-    printf(
-        "\n========================================\n"
-    );
-
-    printf(
-        "Experimento concluido.\n"
-    );
-
-    printf(
-        "Resultados salvos em:\n"
-        "data/resultados_busca_sequencial.csv\n"
-    );
-
+    printf("\n========================================\n");
+    printf("Experimento concluido.\n");
+    printf("Resultados salvos em:\n");
+    printf("data/resultados_busca_sequencial.csv\n");
 
     return 0;
 }

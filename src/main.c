@@ -1,24 +1,23 @@
 /*
  * SCC0502 - Algoritmos e Estruturas de Dados I - ICMC/USP
- * Trabalho 1: Contagem de Operações e de Tempo de Execução
+ * Trabalho 1: Contagem de Operacoes e de Tempo de Execucao
  *
  * Integrantes:
- *   Nome Completo - Nº USP
- *   Nome Completo - Nº USP
- *   Nome Completo - Nº USP
- *   Nome Completo - Nº USP
+ *   Enzo Ribeiro Ferrari - No USP 15574520
+ *   Matheus de Souza Santana - No USP 17839560
+ *   Pietro Augusto Venancio da Costa - No USP 17839104
+ *   Matheus Bastos Machado - No USP 18126601
  *
- * Programa principal: lê um vetor ordenado de N inteiros e executa
- * comandos até receber o comando de encerramento.
+ * Le um vetor ordenado de N inteiros e executa comandos ate receber o
+ * comando de encerramento:
  *
- * Comandos:
- *   1 - Inversão da ordem do vetor (imprime o vetor invertido)
- *   2 - Busca sequencial        (lê P e imprime SIM ou NAO)
- *   3 - Busca binária iterativa (lê P e imprime SIM ou NAO)
- *   4 - Busca binária recursiva (lê P e imprime SIM ou NAO)
+ *   1 - Inversao da ordem do vetor (imprime o vetor invertido)
+ *   2 - Busca sequencial        (le P e imprime SIM ou NAO)
+ *   3 - Busca binaria iterativa (le P e imprime SIM ou NAO)
+ *   4 - Busca binaria recursiva (le P e imprime SIM ou NAO)
  *   5 - Encerra o programa
  *
- * As funções dos algoritmos estão implementadas em algoritmos.c.
+ * Os algoritmos estao em algoritmos.c.
  */
 
 #include <stdio.h>
@@ -29,37 +28,55 @@ int main()
 {
     int n, q, i, p;
 
-    /* Leitura do tamanho do vetor */
-    scanf("%d", &n);
+    if (scanf("%d", &n) != 1)
+    {
+        return 1;
+    }
 
     /*
-     * O vetor é alocado dinamicamente, pois seu tamanho só é conhecido em
-     * tempo de execução e pode chegar a 1 000 000 de elementos, o que
-     * excederia o limite da pilha em algumas plataformas.
+     * Alocacao dinamica: n so e conhecido em tempo de execucao e pode
+     * chegar a 1 000 000, o que excederia o limite da pilha em algumas
+     * plataformas se o vetor fosse declarado localmente.
      */
     int *v = malloc(n * sizeof(int));
 
-    /* Leitura dos N elementos (o enunciado garante que estão ordenados) */
-    for (i = 0; i < n; i++)
+    if (v == NULL)
     {
-        scanf("%d", &v[i]);
+        return 1;
     }
 
-    /* Laço de comandos: executa até que o comando 5 seja lido */
+    for (i = 0; i < n; i++)
+    {
+        if (scanf("%d", &v[i]) != 1)
+        {
+            free(v);
+            return 1;
+        }
+    }
+
     do
     {
-        scanf("%d", &q);
+        if (scanf("%d", &q) != 1)
+        {
+            break;
+        }
 
         switch (q)
         {
         case 1:
         {
             /*
-             * A inversão é feita sobre uma cópia do vetor. Assim, o vetor
-             * original permanece ordenado, condição necessária para que
-             * as buscas binárias dos comandos seguintes funcionem.
+             * A inversao trabalha sobre uma copia. Assim o vetor original
+             * permanece ordenado, condicao necessaria para que as buscas
+             * binarias dos comandos seguintes continuem corretas.
              */
             int *vcopia = malloc(n * sizeof(int));
+
+            if (vcopia == NULL)
+            {
+                free(v);
+                return 1;
+            }
 
             for (i = 0; i < n; i++)
             {
@@ -69,9 +86,8 @@ int main()
             inverte(vcopia, n);
 
             /*
-             * Impressão sem espaço após o último elemento: o primeiro
-             * valor é impresso isoladamente e os demais são precedidos
-             * por um espaço. Como N >= 1, vcopia[0] sempre existe.
+             * O primeiro valor sai isolado e os demais precedidos de
+             * espaco, para nao deixar espaco sobrando no fim da linha.
              */
             printf("%d", vcopia[0]);
             for (i = 1; i < n; i++)
@@ -85,13 +101,16 @@ int main()
         }
 
         /*
-         * Comandos de busca: leem o valor P a ser buscado. As funções
-         * retornam 1 se P está no vetor e 0 caso contrário; a impressão
-         * fica no main para não interferir na medição de tempo dos
-         * algoritmos, feita nos códigos auxiliares.
+         * As tres buscas retornam 1 ou 0; a impressao de SIM e NAO fica
+         * aqui, fora das funcoes, para que a medicao de tempo feita nos
+         * codigos auxiliares nao inclua custo de escrita na tela.
          */
         case 2:
-            scanf("%d", &p);
+            if (scanf("%d", &p) != 1)
+            {
+                free(v);
+                return 1;
+            }
             if (busca_sequencial(v, n, p) == 0)
             {
                 printf("NAO\n");
@@ -103,7 +122,11 @@ int main()
             break;
 
         case 3:
-            scanf("%d", &p);
+            if (scanf("%d", &p) != 1)
+            {
+                free(v);
+                return 1;
+            }
             if (busca_binaria_iterativa(v, n, p) == 0)
             {
                 printf("NAO\n");
@@ -115,8 +138,12 @@ int main()
             break;
 
         case 4:
-            scanf("%d", &p);
-            /* A busca recursiva recebe os limites do intervalo: [0, n-1] */
+            if (scanf("%d", &p) != 1)
+            {
+                free(v);
+                return 1;
+            }
+            /* A versao recursiva recebe os limites do intervalo */
             if (busca_binaria_recursiva(v, 0, n - 1, p) == 0)
             {
                 printf("NAO\n");
@@ -128,7 +155,6 @@ int main()
             break;
 
         case 5:
-            /* Encerramento: libera a memória do vetor original */
             free(v);
             return 0;
         }

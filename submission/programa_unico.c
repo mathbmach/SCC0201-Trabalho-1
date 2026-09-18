@@ -1,36 +1,31 @@
 /*
- * VERSAO EM ARQUIVO UNICO (para submissao no Run.Codes, caso a
- * plataforma aceite apenas um arquivo .c). O conteudo e identico ao
- * de src/main.c + src/algoritmos.c + src/algoritmos.h.
+ * VERSAO EM ARQUIVO UNICO, para submissao no Run.Codes caso a plataforma
+ * aceite apenas um arquivo .c. Conteudo identico ao de src/main.c,
+ * src/algoritmos.c e src/algoritmos.h juntos.
  *
  * SCC0502 - Algoritmos e Estruturas de Dados I - ICMC/USP
  * Trabalho 1: Contagem de Operacoes e de Tempo de Execucao
  *
  * Integrantes:
- *   Enzo Ribeiro Ferrari - 15574520
- *   Matheus Bastos Machado - 18126601
- *   Pietro Augusto Venancio da Costa - 17839104
- *   Matheus de Souza Santana - 17839560
+ *   Enzo Ribeiro Ferrari - No USP 15574520
+ *   Matheus de Souza Santana - No USP 17839560
+ *   Pietro Augusto Venancio da Costa - No USP 17839104
+ *   Matheus Bastos Machado - No USP 18126601
  *
- * Programa principal: le um vetor ordenado de N inteiros e executa
- * comandos ate receber o comando de encerramento.
+ * Le um vetor ordenado de N inteiros e executa comandos ate receber o
+ * comando de encerramento:
  *
- * Comandos:
  *   1 - Inversao da ordem do vetor (imprime o vetor invertido)
  *   2 - Busca sequencial        (le P e imprime SIM ou NAO)
  *   3 - Busca binaria iterativa (le P e imprime SIM ou NAO)
  *   4 - Busca binaria recursiva (le P e imprime SIM ou NAO)
  *   5 - Encerra o programa
  *
- * As funcoes dos algoritmos estao implementadas em algoritmos.c.
+ * Os algoritmos estao em algoritmos.c.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
-
-/* ------------------------------------------------------------------
- * Prototipos das funcoes dos algoritmos
- * ------------------------------------------------------------------ */
 
 void inverte(int *v, int n);
 
@@ -45,18 +40,13 @@ int busca_binaria_recursiva(
     int valor);
 
 
-/* ------------------------------------------------------------------
- * Implementacao dos algoritmos
- * ------------------------------------------------------------------ */
-
 /*
- * Inverte a ordem dos elementos do vetor v, no proprio vetor.
+ * Inverte a ordem dos elementos do vetor, no proprio vetor.
  *
- * Dois indices caminham das pontas para o centro: i comeca em 0 e j
- * comeca em n - 1. A cada repeticao os elementos dessas posicoes sao
- * trocados. Basta percorrer metade do vetor, pois cada troca ja coloca
- * dois elementos nas posicoes corretas. Quando n e impar, o elemento
- * central permanece onde esta.
+ * Dois indices caminham das pontas para o centro e trocam os elementos
+ * de posicao. Basta percorrer metade do vetor, porque cada troca ja
+ * posiciona dois elementos. Com n impar, o elemento central permanece
+ * onde esta.
  */
 void inverte(int *v, int n)
 {
@@ -71,14 +61,11 @@ void inverte(int *v, int n)
 }
 
 /*
- * Busca sequencial: percorre o vetor da primeira ate a ultima posicao,
- * comparando cada elemento com o valor procurado.
+ * Busca sequencial. Retorna 1 se o valor esta no vetor e 0 caso contrario.
  *
- * Retorna 1 se o valor estiver no vetor e 0 caso contrario. O laco para
- * assim que o valor e encontrado, de modo que o numero de comparacoes
- * depende da posicao do elemento.
- *
- * Nao exige vetor ordenado.
+ * Unica das tres buscas que nao exige vetor ordenado. Em troca, precisa
+ * examinar uma posicao por vez, e o numero de comparacoes depende de onde
+ * o valor esta.
  */
 int busca_sequencial(int *v, int n, int valor)
 {
@@ -96,20 +83,18 @@ int busca_sequencial(int *v, int n, int valor)
 }
 
 /*
- * Busca binaria iterativa: exige vetor ordenado em ordem crescente.
+ * Busca binaria iterativa. Exige vetor ordenado em ordem crescente.
+ * Retorna 1 se o valor esta no vetor e 0 caso contrario.
  *
- * O intervalo de busca e delimitado por inicio e fim, ambos inclusivos.
- * A cada repeticao o elemento central do intervalo e comparado com o
- * valor procurado: se for igual, a busca termina; se for menor, o valor
- * so pode estar na metade direita; se for maior, apenas na metade
- * esquerda. Assim o intervalo cai aproximadamente pela metade a cada
- * passo, ate que o valor seja encontrado ou o intervalo fique vazio.
+ * O intervalo de busca e delimitado por inicio e fim, ambos inclusivos,
+ * e cai pela metade a cada repeticao: comparando o valor procurado com o
+ * elemento central, uma das duas metades pode ser descartada inteira.
+ * O laco termina quando o valor e encontrado ou quando o intervalo fica
+ * vazio, o que acontece quando inicio passa de fim.
  *
- * Retorna 1 se o valor estiver no vetor e 0 caso contrario.
- *
- * O calculo inicio + (fim - inicio) / 2 e equivalente a (inicio + fim) / 2
- * para os valores usados aqui, mas evita o estouro do inteiro que a soma
- * direta poderia causar com indices grandes.
+ * O calculo inicio + (fim - inicio) / 2 equivale a (inicio + fim) / 2,
+ * mas evita o estouro do int que a soma direta poderia causar com
+ * indices grandes.
  */
 int busca_binaria_iterativa(int *v, int n, int valor)
 {
@@ -140,15 +125,12 @@ int busca_binaria_iterativa(int *v, int n, int valor)
 }
 
 /*
- * Busca binaria recursiva: mesma estrategia da versao iterativa, porem a
- * reducao do intervalo e feita por uma nova chamada da propria funcao.
+ * Busca binaria recursiva. Mesma estrategia da versao iterativa, mas a
+ * reducao do intervalo e feita por uma nova chamada em vez de um laco.
  *
- * Recebe os limites inclusivos do intervalo. Para buscar no vetor inteiro,
- * a chamada e busca_binaria_recursiva(v, 0, n - 1, p).
- *
- * O caso-base inicio > fim representa o intervalo vazio, ou seja, o valor
- * nao esta no vetor. Retorna 1 se o valor for encontrado e 0 caso
- * contrario. Exige vetor ordenado em ordem crescente.
+ * Recebe os limites inclusivos do intervalo, entao a busca no vetor
+ * inteiro e busca_binaria_recursiva(v, 0, n - 1, p). O caso-base
+ * inicio > fim representa o intervalo vazio, ou seja, valor ausente.
  */
 int busca_binaria_recursiva(
     int *v,
@@ -176,25 +158,19 @@ int busca_binaria_recursiva(
 }
 
 
-/* ------------------------------------------------------------------
- * Programa principal
- * ------------------------------------------------------------------ */
-
-
 int main()
 {
     int n, q, i, p;
 
-    /* Leitura do tamanho do vetor */
     if (scanf("%d", &n) != 1)
     {
         return 1;
     }
 
     /*
-     * O vetor e alocado dinamicamente, pois seu tamanho so e conhecido em
-     * tempo de execucao e pode chegar a 1 000 000 de elementos, o que
-     * excederia o limite da pilha em algumas plataformas.
+     * Alocacao dinamica: n so e conhecido em tempo de execucao e pode
+     * chegar a 1 000 000, o que excederia o limite da pilha em algumas
+     * plataformas se o vetor fosse declarado localmente.
      */
     int *v = malloc(n * sizeof(int));
 
@@ -203,7 +179,6 @@ int main()
         return 1;
     }
 
-    /* Leitura dos N elementos (o enunciado garante que estao ordenados) */
     for (i = 0; i < n; i++)
     {
         if (scanf("%d", &v[i]) != 1)
@@ -213,7 +188,6 @@ int main()
         }
     }
 
-    /* Laco de comandos: executa ate que o comando 5 seja lido */
     do
     {
         if (scanf("%d", &q) != 1)
@@ -226,9 +200,9 @@ int main()
         case 1:
         {
             /*
-             * A inversao e feita sobre uma copia do vetor. Assim, o vetor
-             * original permanece ordenado, condicao necessaria para que
-             * as buscas binarias dos comandos seguintes funcionem.
+             * A inversao trabalha sobre uma copia. Assim o vetor original
+             * permanece ordenado, condicao necessaria para que as buscas
+             * binarias dos comandos seguintes continuem corretas.
              */
             int *vcopia = malloc(n * sizeof(int));
 
@@ -246,9 +220,8 @@ int main()
             inverte(vcopia, n);
 
             /*
-             * Impressao sem espaco apos o ultimo elemento: o primeiro
-             * valor e impresso isoladamente e os demais sao precedidos
-             * por um espaco. Como N >= 1, vcopia[0] sempre existe.
+             * O primeiro valor sai isolado e os demais precedidos de
+             * espaco, para nao deixar espaco sobrando no fim da linha.
              */
             printf("%d", vcopia[0]);
             for (i = 1; i < n; i++)
@@ -262,10 +235,9 @@ int main()
         }
 
         /*
-         * Comandos de busca: leem o valor P a ser buscado. As funcoes
-         * retornam 1 se P esta no vetor e 0 caso contrario; a impressao
-         * fica no main para nao interferir na medicao de tempo dos
-         * algoritmos, feita nos codigos auxiliares.
+         * As tres buscas retornam 1 ou 0; a impressao de SIM e NAO fica
+         * aqui, fora das funcoes, para que a medicao de tempo feita nos
+         * codigos auxiliares nao inclua custo de escrita na tela.
          */
         case 2:
             if (scanf("%d", &p) != 1)
@@ -305,7 +277,7 @@ int main()
                 free(v);
                 return 1;
             }
-            /* A busca recursiva recebe os limites do intervalo: [0, n-1] */
+            /* A versao recursiva recebe os limites do intervalo */
             if (busca_binaria_recursiva(v, 0, n - 1, p) == 0)
             {
                 printf("NAO\n");
@@ -317,7 +289,6 @@ int main()
             break;
 
         case 5:
-            /* Encerramento: libera a memoria do vetor original */
             free(v);
             return 0;
         }
